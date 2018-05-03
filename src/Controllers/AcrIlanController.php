@@ -15,13 +15,39 @@ use App\Http\Controllers\Controller;
 
 class AcrIlanController extends Controller
 {
-    protected $ilan_zaman;
+    protected $ay_zaman = 30 * 24 * 60 * 60;
 
-    function ilan_denetim()
+    function ilan_datas()
     {
-        $ilan_zaman = time() - (30 * 24 * 60 * 60);
         $ilan_model = new Ilan();
-        $ilanlar    = $ilan_model->where('updated_at' > $ilan_zaman)->first();
+        $ilan_zaman = time() - $this->ay_zaman;
+        return $ilan_model->where('updated_at', '>=', date('Y-m-d', $ilan_zaman))->get();
+    }
+
+    function ilan_denetim(my $my)
+    {
+        $ilan_zaman = time() - $this->ay_zaman;
+        $ilan_model = new Ilan();
+        $user_model = new User();
+        $ilanlar    = $ilan_model->where('updated_at', '>=', date('Y-m-d', $ilan_zaman))->where('bakis', 1)->withCount('basvurular')->get();
+        $user_ids   = [];
+        $ilan_ids   = [];
+        foreach ($ilanlar as $ilan) {
+            if ($ilan->basvurular_count > 0) {
+                $user_ids[]                     = $ilan->user_id;
+                $basvuru_sayi[$ilan->user_id][] = $ilan->basvurular_count;
+                $ilan_ids[]                     = $ilan->id;
+            }
+        }
+        $users = $user_model->whereIn('id', $user_ids)->get();
+        if (!empty($user_ids)) {
+            foreach ($users as $user) {
+                $my->mail($user->email, $user->name, 'İlan Sayfası Günlük Rapor', 'mail.ilan_basvuru', array_sum($basvuru_sayi[$user->id]));
+            }
+        }
+        $ilan_model->whereIn('id', $ilan_ids)->whereIn('user_id', $user_ids)->update([
+            'bakis' => 0
+        ]);
     }
 
     function incele(Request $request, my $my)
@@ -56,6 +82,9 @@ class AcrIlanController extends Controller
                 ]);
             },
         ])->first();
+        $ilan_model->where('id', $ilan_id)->where('user_id', Auth::user()->id)->update([
+            'bakis' => 0
+        ]);
         return View('acr_ilan::basvurular', compact('msg', 'ilan', 'ilan_id'));
     }
 
@@ -69,8 +98,9 @@ class AcrIlanController extends Controller
 
     function basvur(Request $request)
     {
-        $cv_model = new Ilan_cv();
-        $cv       = $cv_model->where('user_id', Auth::user()->id)->first();
+        $cv_model   = new Ilan_cv();
+        $ilan_model = new Ilan();
+        $cv         = $cv_model->where('user_id', Auth::user()->id)->first();
         if (empty($cv->id)) {
             return 1;
         }
@@ -81,7 +111,10 @@ class AcrIlanController extends Controller
             'cv_id'   => $cv->id,
             'ilan_id' => $ilan_id
         ];
-        $basvuru_id    = $basvuru_model->insertGetId($data);
+        $basvuru_model->insert($data);
+        $ilan_model->where('id', $ilan_id)->update([
+            'bakis' => 1
+        ]);
         return '<div class="btn btn-danger btn-sm" onclick="basvuru_kaldir(' . $ilan_id . ')">Başvuruyu Kaldır</div>';
     }
 
@@ -118,11 +151,12 @@ class AcrIlanController extends Controller
     function index(my $my)
     {
         $msg           = $my->msg();
+        $ilan_zaman    = time() - $this->ay_zaman;
         $ilan_model    = new Ilan();
         $basvuru_model = new Ilan_basvuru();
         $ilan_ids      = [];
         if (Auth::check()) {
-            $basvurular = $basvuru_model->where('user_id', Auth::user()->id)->get();
+            $basvurular = $basvuru_model->where('updated_at', '>=', date('Y-m-d', $ilan_zaman))->where('user_id', Auth::user()->id)->get();
             foreach ($basvurular as $basvuru) {
                 $ilan_ids[] = $basvuru->ilan_id;
             }
