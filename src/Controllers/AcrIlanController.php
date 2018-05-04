@@ -15,7 +15,7 @@ use App\Http\Controllers\Controller;
 
 class AcrIlanController extends Controller
 {
-    protected $ay_zaman = 30 * 24 * 60 * 60;
+    protected $ay_zaman = 60 * 24 * 60 * 60;
 
     function ilan_datas()
     {

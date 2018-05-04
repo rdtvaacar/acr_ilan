@@ -42,7 +42,7 @@
                     </div>
                     <div class="box-body">
                         <ol>
-                            <li>İlanınız 1 ay boyunca yayında kalır, ardından yayından kaldırılır.</li>
+                            <li>İlanınız 2 ay boyunca yayında kalır, ardından yayından kaldırılır.</li>
                             <li>Sahte ilanlar düzenlemek yasaktır</li>
                             <li>Düzenlenen ilan ile bir kişiye maddi, manevi veya herhangi bir şekilde zarara uğratmak yasaktır.</li>
                         </ol>
