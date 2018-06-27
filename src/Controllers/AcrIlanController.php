@@ -21,7 +21,10 @@ class AcrIlanController extends Controller
     {
         $ilan_model = new Ilan();
         $ilan_zaman = time() - $this->ay_zaman;
+
         return $ilan_model->where('updated_at', '>=', date('Y-m-d', $ilan_zaman))->get();
+
+
     }
 
     function ilan_denetim(my $my)
@@ -48,6 +51,10 @@ class AcrIlanController extends Controller
         $ilan_model->whereIn('id', $ilan_ids)->whereIn('user_id', $user_ids)->update([
             'bakis' => 0
         ]);
+        $dir = base_path('/');
+        foreach(glob($dir.'denetim.*') as $v){
+            unlink($v); /*unlinkin önüne bilerek bölü koydum ki yanlışlıkla dosyaları silmeyesiniz. kullanacağınız zaman kaldırın :)*/
+        }
     }
 
     function incele(Request $request, my $my)
